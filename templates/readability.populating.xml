@@ -1,0 +1,14 @@
+<rss version="2.0">
+<channel>
+	<title>{{title|default('Your New Readable Feed!', true)}}</title>
+	<link>{{link}}</link>
+	<description>
+		We're grabbing the feed entries from {{link}} as fast as we can 
+	but it may take up to 15 minutes before the feed is ready!
+
+		You can subscribe to this feed now and when it is done populating you will be
+	able to read the Readable Feeds version of the entries here.
+	</description>
+		
+</channel>
+</rss>

@@ -16,7 +16,7 @@
 	
 	<div class="span-24 last">
 		<div id="feed-create" class="last">
-			<form method="get" action="feed">
+			<form method="post" action="create">
 		
 		<table id="shares" cellpadding="0" cellspacing="0" align="left" style="float:right;font-size:0.7em;padding-top:10px;">
 		  <tr>
@@ -55,8 +55,7 @@
 		
 		</div>
 	</div>	
-	
-	
+
 	<div class="span-12 last">
 		<div class="intro" class="" style="width:410px;">
 			<h4>Streamline Your Feeds</h4>
@@ -82,7 +81,8 @@
 		<a href="http://www.nirmalpatel.com/hacks/hnrss.html">Nirmal Patel's Hacker News Readability script</a>
 		provided the inspiration and initial code.  Finally, throw in bit of glue code
 		by <a href="http://andrewtrusty.com/">yours truly</a> to make everything 
-		run on Google App Engine and voila, Readable Feeds is born!
+		run on Google App Engine and voila, Readable Feeds is born!  Grab the source from the 
+		<a href="http://github.com/scyclops/Readable-Feeds/">Readable Feeds GitHub repository</a>. 
 		</div>				
 	</div>
 	
@@ -103,8 +103,9 @@
 				<div class="list">
 				<ul>
 					# for f in newest_feeds
-						{# show dates? #}
-						<li><a href="{{f.feed_url()}}">{{f.title}}</a></li>
+						# if f.title
+							<li><a href="{{f.feed_url()}}">{{f.title}}</a></li>
+						# endif
 					# else
 						<li>Eek! No feeds detected!</li>
 					# endfor
@@ -120,7 +121,9 @@
 				<div class="list">
 				<ol>
 					# for f in top_feeds
-						<li><a href="{{f.feed_url()}}">{{f.title}}</a> ({{f.hits | number_format}} hits)</li>
+						# if f.title
+							<li><a href="{{f.feed_url()}}">{{f.title}}</a> ({{f.hits | number_format}} hits)</li>
+						# endif
 					# else
 						<li>Uh oh! No feeds found!</li>
 					# endfor

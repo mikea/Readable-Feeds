@@ -2458,6 +2458,9 @@ def parse(url_file_stream_or_string, etag=None, modified=None, agent=None, refer
     try:
         f = _open_resource(url_file_stream_or_string, etag, modified, agent, referrer, handlers)
         data = f.read()
+        #import logging
+        #logging.debug('feedparser got %s data for url: %s\n\n%s' % 
+        #              (len(data), url_file_stream_or_string, data))
     except Exception, e:
         result['bozo'] = 1
         result['bozo_exception'] = e

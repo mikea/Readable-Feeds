@@ -1,0 +1,6 @@
+queue:
+- name: entries2
+  rate: 75000/d
+- name: feeds2
+  rate: 25000/d
+

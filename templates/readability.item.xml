@@ -1,0 +1,14 @@
+		<item>
+        	<title>{{entry.title}}</title>
+        	<link>{{entry.link}}</link>
+        	<comments>{{entry.comments}}</comments>
+	        <description>
+    	        <![CDATA[
+				{{entry.content|safe}}
+				{# this if might not be necessary.. #}
+				# if entry.comments
+					<br/><a href="{{entry.comments}}">Comments</a>
+				# endif
+				]]>
+        	</description>
+    	</item>

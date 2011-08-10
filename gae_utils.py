@@ -105,7 +105,7 @@ class RenderHandler(webapp.RequestHandler):
  
   def write(self, str):
       self.response.out.write(str)
-      self.response.out.write('<br />')
+      #self.response.out.write('<br />')
 
 
 def get_session():

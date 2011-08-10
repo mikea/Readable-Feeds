@@ -1,5 +1,5 @@
 application: andrewtrusty
-version: 1
+version: 6
 runtime: python
 api_version: 1
 
@@ -17,13 +17,22 @@ handlers:
 - url: /images
   static_dir: images
 
-- url: /admin/.*
+- url: /rfadmin/.*
   script: $PYTHON_LIB/google/appengine/ext/admin
   login: admin
   secure: always
 
+- url: /readability/queue/.*
+  login: admin
+  script: main.py
+
+- url: /readability/cron/.*
+  login: admin
+  script: main.py
+
 - url: /.*
   script: main.py
+
 
 
 skip_files:
@@ -38,6 +47,5 @@ skip_files:
 - ^(.*/)?\..*
 - ^(.*/)?_darcs
 - ^(.*/)?DEV
-- ^(.*/)?\.git
 
 # added 4 files to skip to the defaults

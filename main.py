@@ -26,6 +26,11 @@ class MainHandler(RenderHandler):
     args = utils.storage()
     self.render('index', args)
 
+class EmptyHandler(RenderHandler):
+  def get(self):
+    # send content-type ..?
+    self.write('')
+
 
 from readability import *
 
@@ -35,8 +40,16 @@ def main():
 
   application = webapp.WSGIApplication([('/', MainHandler),
                                         ('/readability/', ReadabilityHandler),
+                                        ('/readability/create', CreateFeedHandler),
                                         ('/readability/feed', ReadabilityFeedHandler),
-                                        ('/readability/site', ReadabilitySiteHandler),
+                                        ('/readability/cron/cleanup-url-cache', UrlCacheCronHandler),
+                                        ('/readability/queue/feeds', FeedsQueueHandler),
+                                        ('/readability/queue/feeds2', FeedsQueueHandler),
+                                        ('/readability/queue/entries', EntriesQueueHandler),
+                                        ('/readability/queue/entries2', EntriesQueueHandler),
+                                        ('/robots.txt', EmptyHandler),
+                                        ('/favicon.ico', EmptyHandler),
+                                        #('/readability/transfer', TransferHandler),
                                         ],
                                        debug=DEV)
   
