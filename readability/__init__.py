@@ -1,6 +1,6 @@
 #    Readable Feeds
 #    Copyright (C) 2009  Andrew Trusty (http://andrewtrusty.com)
-#    
+#
 #    This file is part of Readable Feeds.
 #
 #    Readable Feeds is free software: you can redistribute it and/or modify
@@ -55,10 +55,10 @@ class Cache(object):
     def __init__(self, expires=CACHE_TIME, namespace='readable-feeds'):
         # TODO: use namespace..
         self.cache = GAEUCache(default_timeout = expires)
-    
+
     def set(self, k, v):
         self.cache[k] = v
-    
+
     def get(self, k):
         try:
             return self.cache[k]
@@ -93,28 +93,28 @@ class UrlCache(db.Model):
             db.delete(UrlCache.all().filter('timeout <', datetime.now()).fetch(500))
             #db.delete(UrlCache.all().filter('timeout <', datetime.now()).fetch(500))
         return
-        
+
         # TODO: below is failing.., does above fail?
         """
         size_cutoff = 500000000 # 500 Mb
         bytes_used = stats.GlobalStat.all().order('-timestamp').get().bytes
-         
+
         if bytes_used > size_cutoff and cls.some_expired():
             def delete_n(n=500):
                 # delete expired caches starting from the ones created first
                 # but can't do .order('created') b/c have to use same attr as the filter!
-                db.delete(UrlCache.all().filter('timeout <', 
+                db.delete(UrlCache.all().filter('timeout <',
                                                 datetime.now()).fetch(n))
                 # much faster to use above, max 500 per delete
-                
-                #expired = UrlCache.all().filter('timeout <', 
+
+                #expired = UrlCache.all().filter('timeout <',
                 #                                datetime.now()).fetch(n)
                 #for e in expired:
                 #    e.delete()
-            
+
             delete_n() # assume it takes 10 seconds, so we do it max twice per request
             if cls.some_expired(): delete_n()
-            
+
             # TODO: if necessary, add last_hit datetime to cache
             #     then we can delete least recently used first
 
@@ -126,7 +126,7 @@ class CustomCache(object):
     def __init__(self, expires=CACHE_TIME, namespace='readable-feeds'):
         self.expires = expires
         self.namespace = namespace
-    
+
     # need to hash b/c some urls are too long to put in 500 byte StringProperty
     # for debugging, only hash long strings
     def store_key(self, k):
@@ -136,7 +136,7 @@ class CustomCache(object):
             return hashlib.sha1(k).hexdigest()
         else:
             return str(k)
-    
+
     def get_from_store(self, k):
         data = None
         cache = db.GqlQuery("SELECT * FROM UrlCache WHERE url = :1", k).get()
@@ -148,12 +148,12 @@ class CustomCache(object):
             data = pickle.loads(cache.data)
             self.set(k, data, use_store=False) # put back in memory cache
         return data
-    
+
     def save_to_store(self, k, v, expires):
         timeout = datetime.now() + timedelta(0, expires)
         cache = UrlCache(url=k, data=pickle.dumps(v), timeout=timeout) # not using namespace..
         cache.put()
-    
+
     def set(self, k, v, expires=None, use_store=True):
         key = self.store_key(k)
         if not expires:
@@ -162,11 +162,11 @@ class CustomCache(object):
         if use_store:
             # should not already exist or this will throw an error..
             self.save_to_store(key, v, expires)
-        
+
     def get(self, k):
         key = self.store_key(k)
         return gae_memcache.get(key, namespace=self.namespace) or self.get_from_store(key)
-        
+
     def get_multi(self, ks, use_store=True, as_dict=False):
         keys = [self.store_key(k) for k in ks]
         data_dict = gae_memcache.get_multi(keys, namespace=self.namespace)
@@ -189,7 +189,7 @@ class CustomCache(object):
                     if item:
                         data.append(item)
             return data
-    
+
     def delete_multi(self, ks, use_store=True):
         keys = [self.store_key(k) for k in ks]
         if keys:
@@ -205,11 +205,11 @@ class CustomCache(object):
 
     def incr(self, k, delta=1, namespace=None, initial_value=None):
         key = self.store_key(k)
-        return gae_memcache.incr(k, delta=delta, 
+        return gae_memcache.incr(k, delta=delta,
                                  namespace=namespace or self.namespace, initial_value=initial_value)
     def decr(self, k, delta=1, namespace=None, initial_value=None):
         key = self.store_key(k)
-        return gae_memcache.decr(k, delta=delta, 
+        return gae_memcache.decr(k, delta=delta,
                                  namespace=namespace or self.namespace, initial_value=initial_value)
 
 #memcache = Cache()
@@ -217,8 +217,9 @@ memcache = CustomCache()
 # need to run now in dev to test
 
 class Feed2(db.Model):
+    # Ket == URL
     url = db.StringProperty(required=True)
-    hits = db.IntegerProperty(default=1) 
+    hits = db.IntegerProperty(default=1)
     created = db.DateTimeProperty(auto_now_add=True)
     title = db.StringProperty(default='', indexed=False)
 
@@ -229,12 +230,12 @@ class Feed2(db.Model):
 class ReadabilityHandler(RenderHandler):
     def get(self):
         args = utils.storage()
-        
+
         args.top_feeds = Feed2.all().order('-hits').fetch(10)
         args.newest_feeds = Feed2.all().order('-created').fetch(10)
         args.url = 'http://andrewtrusty.appspot.com/readability/'
         args.title = 'Readable Feeds'
-        
+
         self.render('readability.index', args)
 
 
@@ -243,10 +244,10 @@ def get_update_args(req):
     show_linked = req.get('linked') or True
     # pull/show/embed_links = self.request.get('link_depth') # [0,3]
     # dl/fetch/retrieve
-    retrieve_links = max(0, min(3, int(req.get('retrieve_links') or 0))) 
+    retrieve_links = max(0, min(3, int(req.get('retrieve_links') or 0)))
     feed_url = req.get('url')
-    
-    return dict(show_original=show_original, 
+
+    return dict(show_original=show_original,
                 retrieve_links=retrieve_links,
                 url=feed_url,
                 show_linked=show_linked)
@@ -259,7 +260,7 @@ def parse_feed(data, feed_url): # accepts url, stream or string
     parsed_feed = feedparser.parse(data)
     if not parsed_feed:
         raise FeedNotFound("parsed to None")
-    
+
     # test if its a feed by trying to get the title & link
     # assuming that if i get title, link & subtitle its a valid feed
     try:
@@ -274,9 +275,9 @@ def parse_feed(data, feed_url): # accepts url, stream or string
     description = ''
     if hasattr(parsed_feed.feed, 'subtitle'):
         description = parsed_feed.feed.subtitle
-        
+
     return dict(title=title,
-                link=link, 
+                link=link,
                 description=description,
                 items=parsed_feed.entries)
 
@@ -285,17 +286,17 @@ def get_fetch_rpc_handler(rpc, feed_args, rpcs, feeds, proxied=False):
     def handle_fetch_rpc():
         feed_url = feed_args['url']
         del feed_args['url']
-        
+
         got_exc = True
         afeed = {}
         try:
             result = rpc.get_result()
             if result.status_code != 200:
                 raise FeedNotFound('bad status code: %s' % result.status_code)
-            
+
             afeed = parse_feed(result.content, feed_url)
             got_exc = False
-            
+
         except Exception, e:
             # DownloadError, FeedNotFound error or
             #     encoding exception.. that EUC-TW or what not codec not supported by python
@@ -308,47 +309,46 @@ def get_fetch_rpc_handler(rpc, feed_args, rpcs, feeds, proxied=False):
         if not afeed:
             logging.error('afeed is not set for feed url: %s' % feed_url)
             return
-        
+
         afeed['items'] = afeed['items'][:50]
         feeds.append( (feed_url, afeed) )
-        
+
     return handle_fetch_rpc
 
 
 def process_feed(feed_url, afeed, feed_args):
     logging.debug('process feed updating title for: %s' % feed_url)
-    feed = db.GqlQuery("SELECT * FROM Feed2 WHERE url = :1",
-                       feed_url).get()
+    feed = Feed2.get_by_key_name(feed_url)
     feed.title = afeed['title']
-    # TODO: update link.. 
+    # TODO: update link..
     feed.put()
-    
+
     logging.debug('process feed working on entries for: %s' % feed_url)
-        
+
     elinks = []
     entries_queue = taskqueue.Queue(name='entries%s' % QUEUE_NUM)
     logging.debug('got queue object w/ %s items for feed_url: %s' % (len(afeed.get('items',[])), feed_url))
     for entry in afeed['items']: # already limited to 50 by the rpc fetch callback (to prevent DOS)
         elinks.append(entry.link)
-        
+
         # skip already cached entries
         if memcache.get(entry.link):
             #logging.debug('skipping cached feed entry: %s' % entry.link)
             continue
         logging.debug('adding feed entry task: %s' % entry.link)
-        
+
         task_url = '/readability/queue/entries%s' % QUEUE_NUM
         name = hashlib.sha1(entry.link.encode('utf-8')).hexdigest() # for uniqueness constraint
-        
+
         comments = ''
         if hasattr(entry, 'comments'):
             comments = entry.comments
         description = ''
         if hasattr(entry, 'description'):
             description = entry.description
-        
+
         memcache.set('description-'+entry.link, description)
-        
+
         try:
             params = dict(entry_url=entry.link,
                           entry_title=entry.title,
@@ -364,10 +364,10 @@ def process_feed(feed_url, afeed, feed_args):
             pass
         except OverQuotaError:
             pass # ouch
-    
-    #logging.debug('feeds queue handler enqueued max %s items w/ feed url: %s' % 
+
+    #logging.debug('feeds queue handler enqueued max %s items w/ feed url: %s' %
     #              (len(args['items']), feed_url))
-    
+
     # set all the entry links so we know what to return when building the feed
     feed_data = dict(title=afeed['title'],
                      link=afeed['link'],
@@ -375,12 +375,12 @@ def process_feed(feed_url, afeed, feed_args):
                      entry_keys=elinks,
                      last_update=time.time())
     #logging.debug('about to set feed_data for feed: %s' % feed_url)
-    
+
     memcache.set(feed_url, feed_data)
     logging.debug('finished processing entries for feed: %s' % feed_url)
-    
-    
-    
+
+
+
 
 class FeedsQueueHandler(RenderHandler):
     def get(self):
@@ -397,12 +397,12 @@ class FeedsQueueHandler(RenderHandler):
         if not time_key:
             logging.error('missing time key argument')
             return
-        
+
         num_feeds = memcache.get(time_key)
         if not num_feeds:
             # not an error b/c the current time_key triggers task for old time_key
             # TODO: setup a cron to trigger time_keys in case they don't get automatically triggered
-            logging.debug('no feeds to update') 
+            logging.debug('no feeds to update')
             return
         num_feeds = int(num_feeds)
         logging.debug('%s feeds to update for time key: %s' % (num_feeds, time_key))
@@ -413,7 +413,7 @@ class FeedsQueueHandler(RenderHandler):
         feed_data = memcache.get_multi(feed_keys, use_store=False, as_dict=True)
         url2data = {}
         url2mkeys = {}
-        
+
         rpcs = []
         feeds = []
         c = 0
@@ -422,19 +422,19 @@ class FeedsQueueHandler(RenderHandler):
             url2mkeys.setdefault(feed_url,[]).append(mkey)
             if feed_url in url2data: continue
             url2data[feed_url] = fdata
-        
+
             rpc = urlfetch.create_rpc(deadline=FETCH_TIMEOUT)
             rpc.callback = get_fetch_rpc_handler(rpc, fdata, rpcs, feeds)
             urlfetch.make_fetch_call(rpc, feed_url,
                                      headers={'User-agent':USER_AGENT}, follow_redirects=True)
             rpcs.append(rpc)
             c += 1
-        
+
         # remove the data we don't need anymore
         #    instead we remove the data after its processed so Out of time errors don't
         #    can have the remaining tasks resumed in the next task try
         #memcache.delete_multi(feed_keys + [time_key], use_store=False)
-        
+
         while rpcs:
             rpc = rpcs.pop(0)
             try:
@@ -451,17 +451,17 @@ class FeedsQueueHandler(RenderHandler):
                     except Exception, e:
                         memcache.delete_multi(url2mkeys[afeed_url], use_store=False)
                         raise e
-            
+
             except DeadlineExceededError, e:
                 # we want the task to fail on this so it reruns
                 raise e
             except Exception, e:
                 logging.error('got exception while waiting for asynch feed rpc: %s' % e)
-        
+
         memcache.delete(time_key, use_store=False)
-        
+
         logging.debug('%s feeds updated for time key: %s' % (c, time_key))
-        
+
 
 # might want to make this handle more than one entry at a time..
 #    or make the feed handler handly an entry or two too..
@@ -470,10 +470,10 @@ class EntriesQueueHandler(RenderHandler):
         self.post()
     def post(self):
         #self.write('running... <br />')
-        
+
         #logging.error('delete me!!!')
         #return
-        
+
         entry_url = self.request.get('entry_url')
         entry_title = self.request.get('entry_title')
         entry_comments = self.request.get('entry_comments')
@@ -483,44 +483,44 @@ class EntriesQueueHandler(RenderHandler):
             msg = 'description 2 memcache missing for: %s' % entry_url
             logging.error(msg)
             return
-        
+
         update_args = get_update_args(self.request)
         del update_args['url'] # don't need for entry handler
-        
-        #logging.debug('entry queue handler running w/ url: %s' % 
+
+        #logging.debug('entry queue handler running w/ url: %s' %
         #              (entry_url))
-        
+
         if memcache.get(entry_url):
             return
-        
+
         #user_agent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.16) Gecko/20080702 Firefox/2.0.0.16'
         content = hn.upgradeEntry(entry_url, entry_description, **update_args) #, user_agent)
 
-        
+
         # going in depth on links... gonna take a good bit of time
         # doing it in one task is probably doable..
         # kinda tricky to break up into multiple tasks.. but it would cache better..
-        
+
         """
         self.write(entry_title + '<br />')
         self.write(entry_url + '<br />')
         self.write(content + '<br />')
         self.write(entry_comments + '<br />')
         """
-        #logging.debug('entry queue handler upgraded link w/ url: %s' % 
+        #logging.debug('entry queue handler upgraded link w/ url: %s' %
         #              (entry_url))
-        
+
         # the building of it is going to be quite delayed if i create new tasks for each link..
         # and anyways, the # of tasks i have is kind of a scarce resource..
-        
+
         entry_data = dict(title=entry_title,
                           link=entry_url,
                           content=content,
                           comments=entry_comments)
-        
+
         memcache.set(entry_url, entry_data)
-        
-        #logging.debug('entry queue handler set cache w/ url: %s' % 
+
+        #logging.debug('entry queue handler set cache w/ url: %s' %
         #              (entry_url))
 
 
@@ -528,7 +528,7 @@ def queue_feed_update(**params):
     # TODO: handle newly created feeds specially or just reduce interval if this is really efficient..
     time_sz = 60 * 30 # 900
     feed_url = params['url']
-    
+
     #logging.debug('queue feed update called for: %s' % feed_url)
     old_feed_data = memcache.get(feed_url)
     to_delay = memcache.get('delay-'+feed_url)
@@ -540,7 +540,7 @@ def queue_feed_update(**params):
     if old_feed_data:
         old_feed_data['last_update'] = time.time()
         memcache.set(feed_url, old_feed_data)
-    
+
     time_key_val = int(time.time()) / time_sz # unique for every 15 minutes
     time_key = 'feed-update-'+str(time_key_val)
     time_key_num = memcache.incr(time_key, initial_value=0)
@@ -549,7 +549,7 @@ def queue_feed_update(**params):
         return
     """
     from get_update_args(..)
-        params is dict(show_original=show_original, 
+        params is dict(show_original=show_original,
                        retrieve_links=retrieve_links,
                        url=feed_url,
                        show_linked=show_linked)
@@ -557,7 +557,7 @@ def queue_feed_update(**params):
     memcache.set(time_key+'-%s' % time_key_num, params,
                  expires=time_sz*3, use_store=False)
     logging.debug('added feed #%s for future update task w/ time key: %s' % (time_key_num, time_key))
-    
+
     if time_key_num == 1:
         # run a task queue job for the previous time key
         task_url = '/readability/queue/feeds%s' % QUEUE_NUM
@@ -566,7 +566,7 @@ def queue_feed_update(**params):
         name = 'feed-update-task-%s' % (time_key_val - 1)
         task_time_key = 'feed-update-'+str(time_key_val - 1)
         try:
-            feeds_queue.add(taskqueue.Task(url=task_url, name=name, 
+            feeds_queue.add(taskqueue.Task(url=task_url, name=name,
                                            params=dict(time_key=task_time_key)))
             #logging.debug('feed update task QUEUED for: %s' % name)
         except taskqueue.TaskAlreadyExistsError:
@@ -575,7 +575,7 @@ def queue_feed_update(**params):
             logging.warning('tombstoned task: %s' % name)
         except OverQuotaError:
             logging.warning('over task quota error!: %s' % name)
-        
+
         logging.debug('created feed update task for time key: %s' % task_time_key)
 
 
@@ -584,19 +584,18 @@ def create_feed(handler, **params):
     if not feed_url.startswith('http') or '://' not in feed_url or feed_url == 'http://':
         handler.response.headers["Content-Type"] = "text/html; charset=UTF-8"
         handler.response.set_status(400)
-        handler.response.out.write('bad website/feed url, please specify the full URL' + 
+        handler.response.out.write('bad website/feed url, please specify the full URL' +
                                 '<br /><br /><a href="/readability/">&laquo; back</a>')
         return False
 
     queue_feed_update(**params)
-    
-    feed = db.GqlQuery("SELECT * FROM Feed2 WHERE url = :1",
-                       feed_url).get()
-    
+
+    feed = Feed2.get_by_key_name(feed_url)
+
     if not feed:
-        feed = Feed2(url=feed_url)
+        feed = Feed2(key_name=feed_url, url=feed_url)
         feed.put()
-    
+
     return feed.feed_url()
 
 
@@ -622,20 +621,18 @@ class CreateFeedHandler(RenderHandler):
 class ReadabilityFeedHandler(RenderHandler):
     def get(self):
         self.response.headers["Content-Type"] = "text/xml; charset=UTF-8"
-        
+
         update_args = get_update_args(self.request)
         feed_url = update_args['url']
-        
-        # xxxxx
-        #logging.debug('FEED_URL in Feed Handler is: %s' % feed_url)
-        
-        feed = db.GqlQuery("SELECT * FROM Feed2 WHERE url = :1",
-                           feed_url).get()
-        
+
+        logging.debug('ReadabilityFeedHandler: %s' % feed_url)
+
+        feed = Feed2.get_by_key_name(feed_url)
+
         if self.request.get('delete') == 'asgard': # make it slightly difficult to delete
             feed.delete()
             return
-        
+
         if not feed:
             # not created yet, trigger the create & then show a blank feed
             readable_feed_url = create_feed(self, **update_args)
@@ -644,10 +641,10 @@ class ReadabilityFeedHandler(RenderHandler):
                 self.render('readability.populating', {'link':feed_url, 'title':None},
                             ext='.xml')
             return
-        
+
         feed.hits += 1
         feed.put()
-        
+
         feed_data = memcache.get(feed_url) # title, link, description, entry_keys
         if not feed_data:
             # the feed tasks haven't completed yet
@@ -655,39 +652,39 @@ class ReadabilityFeedHandler(RenderHandler):
                             ext='.xml')
             queue_feed_update(**update_args)
             return
-        
+
         queue_feed_update(**update_args)
-        
+
         #logging.debug('FEED_URL: %s' % feed_url)
         #logging.debug('FEED_DATA: %s' % feed_data)
-        
+
         #entries = {}
         entries = []
         if feed_data['entry_keys']:
             entries = memcache.get_multi(feed_data['entry_keys']) # as a k,v dict
             # which means unordered...
-        
-        channel_args = tuple(map(jinja2.escape, 
-                                 [feed_data['title'], 
-                                  feed_data['link'], 
+
+        channel_args = tuple(map(jinja2.escape,
+                                 [feed_data['title'],
+                                  feed_data['link'],
                                   feed_data['description']]))
-        
+
         self.write("""<rss version="2.0">
         <channel>
             <title>%s</title>
             <link>%s</link>
             <description>%s</description>""" % channel_args)
-        
+
         for entry in entries:
         #for k, entry in entries.items(): # for just memcache dict from get_multi
             self.render('readability.item',
                         {'entry':utils.storage(entry)},
                         ext='.xml')
-        
+
         self.write("""</channel>
         </rss>""")
-        
-        
+
+
 
 class TransferHandler(RenderHandler):
     def get(self):
@@ -700,12 +697,12 @@ class TransferHandler(RenderHandler):
                 self.write('&nbsp; &nbsp; - failed w/ %s<br />' % e)
                 # didn't print the exception on fail.. Tombstoned i think..
         self.write('FIN<br />')
-        
-        
+
+
 class UrlCacheCronHandler(RenderHandler):
     def post(self):
         self.get()
     def get(self):
-        UrlCache.cleanup() 
-        self.write('done')       
-    
+        UrlCache.cleanup()
+        self.write('done')
+
